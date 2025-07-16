@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.optim as optim
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -225,15 +226,15 @@ class Transformer(nn.Module):
 
 
 
-def train_reverse_transformer(model, src, trgt_in, trgt_out, device):
+def train_reverse_transformer(model, data_loader, device):
     criterion = nn.CrossEntropyLoss(ignore_index=0)  # Assuming 0 is the padding index
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
 
     model.train()
     total_loss = 0.0
 
-    for src, trgt in data_loader:
-        src, trgt = src.to(device), trgt.to(device)
+    for src, trgt_in, trgt_out in data_loader:
+        src, trgt_in, trgt_out = src.to(device), trgt_in.to(device), trgt_out.to(device)
 
         optimizer.zero_grad()
         output = model(src, trgt)
@@ -279,6 +280,14 @@ if __name__ == '__main__':
     seq_len = 10
     batch_size = 64
     src, tgt_in, tgt_out = generate_training_data_reverse_numbers(batch_size, vocab_size, seq_len, device=device)
+    data_loader = [(src, tgt_in, tgt_out)]  # Simple data loader for demonstration
+
+    model = Transformer(vocab_size, d_embed, d_embed, 0.1)
+    num_epochs = 10
+
+    for epoch in range(num_epochs):
+        loss = train_reverse_transformer(model, data_loader, device)
+        print(f"Epoch {epoch + 1}, Loss: {loss:.4f}")
 
     print("Source:", src.shape)  # Should be (batch_size, seq_len)
     print("Target Input:", tgt_in.shape)  # Should be (batch_size, seq_len + 1)
